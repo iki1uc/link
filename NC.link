@@ -1,23 +1,17 @@
 export const LINK = {
     modules: {},
-    buffer: [],
 
     bind(name, ref) {
         this.modules[name] = ref;
-        console.log(`[NC.link] bind → ${name}`);
     },
 
-    route(type, data) {
-        const pkt = { type, data, time: Date.now() };
-        this.buffer.push(pkt);
-        return `[NC.link] ${type} → ${JSON.stringify(data)}`;
-    },
-
-    sync(callback) {
-        while (this.buffer.length > 0) {
-            const pkt = this.buffer.shift();
-            callback(pkt);
-        }
+    fullSync(packet) {
+        const out = {
+            time: Date.now(),
+            packet,
+            sync: true
+        };
+        console.log("[NC.link FullSync] →", out);
+        return out;
     }
 };
-
