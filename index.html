@@ -1,5 +1,32 @@
-<script type="module">
-    import { LINK } from "./link.js";
-    LINK.route("start", "link active");
-</script>
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>NC.link Hub</title>
+</head>
+<body style="font-family: monospace; background:#111; color:#0f0;">
+    <h1>NC.link Hub</h1>
+    <pre id="out"></pre>
 
+    <script type="module">
+        import { PX } from "./PX.js";
+        import { RESPO_SPEAKWRITE } from "./RESPO-SPEAKWRITE.js";
+
+        const px = new PX();
+        const respo = new RESPO_SPEAKWRITE();
+        const out = document.getElementById("out");
+
+        px.setMode("write");
+        px.setRole(1);
+
+        function speak(text) {
+            const pxOut = px.hear(text);
+            respo.process(pxOut);
+            out.innerText += "YOU: " + text + "\n";
+        }
+
+        speak("hallo system");
+        speak("zweiter satz");
+    </script>
+</body>
+</html>
