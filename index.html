@@ -2,11 +2,12 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>NC.link Hub</title>
+    <title>NC.link 3er Konferenz</title>
 </head>
 <body style="font-family: monospace; background:#111; color:#0f0;">
-    <h1>NC.link Hub</h1>
-    <pre id="out"></pre>
+    <h1>NC.link 3er Konferenz</h1>
+
+    <pre id="chat"></pre>
     <pre id="nc"></pre>
 
     <script type="module">
@@ -17,7 +18,7 @@
         const px = new PX();
         const respo = new RESPO_SPEAKWRITE();
 
-        const out = document.getElementById("out");
+        const chat = document.getElementById("chat");
         const nc = document.getElementById("nc");
 
         // NC.link bindet Module
@@ -26,23 +27,25 @@
 
         // PX aktivieren
         px.setMode("write");
+
+        // Standard Sprecher
         px.setRole(1);
 
-        function speak(text) {
+        function speak(role, text) {
+            px.setRole(role);
             const pxOut = px.hear(text);
 
-            // RESPO verarbeitet PX
             respo.process(pxOut);
 
-            // NC.link zeigt den Event
-            nc.innerText += LINK.route("speak", text) + "\n";
-
-            // Chat-Ausgabe
-            out.innerText += "YOU: " + text + "\n";
+            chat.innerText += `[R${role}] ${text}\n`;
+            nc.innerText += LINK.route("speak", { role, text }) + "\n";
         }
 
-        speak("hallo system");
-        speak("zweiter satz");
+        // 3er Konferenz Beispiel
+        speak(1, "Hallo, ich bin Sprecher 1.");
+        speak(2, "Ich bin Sprecher 2, ich höre euch.");
+        speak(3, "Sprecher 3 ist jetzt auch drin.");
+        speak(1, "Alles klar, Konferenz läuft.");
     </script>
 </body>
 </html>
