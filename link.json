@@ -1,1 +1,8 @@
+{
+  "px": "./PX.js",
+  "pc": "./PC.js",
+  "pq": "./PQ.js",
+  "rawator": "./RAWATOR.js",
+  "respo": "./RESPO-SPEAKWRITE.js"
+}
 
