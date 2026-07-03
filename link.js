@@ -1,6 +1,5 @@
 export const LINK = {
-    route(mod, data) {
-        console.log("NC.link →", mod, data);
+    route(type, data) {
+        console.log("NC.link →", type, data);
     }
 };
-
