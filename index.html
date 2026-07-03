@@ -7,21 +7,37 @@
 <body style="font-family: monospace; background:#111; color:#0f0;">
     <h1>NC.link Hub</h1>
     <pre id="out"></pre>
+    <pre id="nc"></pre>
 
     <script type="module">
         import { PX } from "./PX.js";
         import { RESPO_SPEAKWRITE } from "./RESPO-SPEAKWRITE.js";
+        import { LINK } from "./link.js";
 
         const px = new PX();
         const respo = new RESPO_SPEAKWRITE();
-        const out = document.getElementById("out");
 
+        const out = document.getElementById("out");
+        const nc = document.getElementById("nc");
+
+        // NC.link bindet Module
+        LINK.bind("px", px);
+        LINK.bind("respo", respo);
+
+        // PX aktivieren
         px.setMode("write");
         px.setRole(1);
 
         function speak(text) {
             const pxOut = px.hear(text);
+
+            // RESPO verarbeitet PX
             respo.process(pxOut);
+
+            // NC.link zeigt den Event
+            nc.innerText += LINK.route("speak", text) + "\n";
+
+            // Chat-Ausgabe
             out.innerText += "YOU: " + text + "\n";
         }
 
