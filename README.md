@@ -90,4 +90,3 @@ LINK ist regelkonform.
 LINK kann genutzt werden, aber nicht missbraucht werden.
 
 LINK führt Container sauber in Pipeline 3 oder Pipeline 6 aus.
-
