@@ -1,51 +1,127 @@
 <!DOCTYPE html>
-<html>
+<html lang="de">
 <head>
-    <meta charset="UTF-8">
-    <title>NC.link 3er Konferenz</title>
+  <meta charset="UTF-8">
+  <title>nc.link / JB-Channel</title>
+  <style>
+    body { font-family: monospace; background:#000; color:#0ff; padding:20px; }
+    .box { border:1px solid #0ff; padding:20px; width:340px; margin-bottom:20px; }
+    h2 { margin-top:0; }
+    hr { border:0; border-top:1px solid #0ff; margin:15px 0; }
+  </style>
 </head>
-<body style="font-family: monospace; background:#111; color:#0f0;">
-    <h1>NC.link 3er Konferenz</h1>
+<body>
 
-    <pre id="chat"></pre>
-    <pre id="nc"></pre>
+<h2>nc.link / JB‑Channel / Output</h2>
 
-    <script type="module">
-        import { PX } from "./PX.js";
-        import { RESPO_SPEAKWRITE } from "./RESPO-SPEAKWRITE.js";
-        import { LINK } from "./link.js";
+<!-- AUTO -->
+<div class="box">
+  <h3>nc.auto()</h3>
+  <div id="auto_lage"></div>
+  <div id="auto_kontext"></div>
+  <div id="auto_position"></div>
+  <div id="auto_zustand"></div>
+  <hr>
+  <div id="auto_jb"></div>
+</div>
 
-        const px = new PX();
-        const respo = new RESPO_SPEAKWRITE();
+<!-- CHECK -->
+<div class="box">
+  <h3>nc.check()</h3>
+  <div id="check_status"></div>
+  <div id="check_raw"></div>
+  <div id="check_jb"></div>
+</div>
 
-        const chat = document.getElementById("chat");
-        const nc = document.getElementById("nc");
+<!-- RAW -->
+<div class="box">
+  <h3>nc.raw()</h3>
+  <div id="raw_out"></div>
+</div>
 
-        // NC.link bindet Module
-        LINK.bind("px", px);
-        LINK.bind("respo", respo);
+<!-- CHANNEL -->
+<div class="box">
+  <h3>nc.channel()</h3>
+  <div id="channel_out"></div>
+</div>
 
-        // PX aktivieren
-        px.setMode("write");
+<script>
+// ---------------- AUTO ----------------
+function genLAGE() {
+  const r = ["A", "B", "C", "D"];
+  return r[Math.floor(Math.random() * r.length)];
+}
+function genKONTEXT() {
+  const r = ["TEST", "LIVE", "PROD"];
+  return r[Math.floor(Math.random() * r.length)];
+}
+function genPOSITION() {
+  return Math.floor(Math.random() * 12) + 1;
+}
+function genZUSTAND() {
+  return [0,1][Math.floor(Math.random()*2)];
+}
 
-        // Standard Sprecher
-        px.setRole(1);
+function JB_AUTO() {
+  const L = genLAGE();
+  const K = genKONTEXT();
+  const P = genPOSITION();
+  const Z = genZUSTAND();
 
-        function speak(role, text) {
-            px.setRole(role);
-            const pxOut = px.hear(text);
+  document.getElementById("auto_lage").innerText = "LAGE: " + L;
+  document.getElementById("auto_kontext").innerText = "KONTEXT: " + K;
+  document.getElementById("auto_position").innerText = "POSITION: " + P;
+  document.getElementById("auto_zustand").innerText = "ZUSTAND: " + Z;
 
-            respo.process(pxOut);
+  const J = (!L || !K || !P || !Z);
+  const B = !J;
+  const E = "^";
 
-            chat.innerText += `[R${role}] ${text}\n`;
-            nc.innerText += LINK.route("speak", { role, text }) + "\n";
-        }
+  document.getElementById("auto_jb").innerText = "JB.auto = (J)" + E + "(B) → " + (B ? "OK" : "FEHLT");
+}
 
-        // 3er Konferenz Beispiel
-        speak(1, "Hallo, ich bin Sprecher 1.");
-        speak(2, "Ich bin Sprecher 2, ich höre euch.");
-        speak(3, "Sprecher 3 ist jetzt auch drin.");
-        speak(1, "Alles klar, Konferenz läuft.");
-    </script>
+// ---------------- CHECK ----------------
+function JB_CHECK() {
+  const L = "A";
+  const K = "LIVE";
+  const P = 7;
+  const Z = 1;
+
+  const J = (!L || !K || !P || !Z);
+  const B = !J;
+  const E = "^";
+
+  document.getElementById("check_status").innerText =
+    "nc.link STATUS: " + (B ? "index.html OK" : "index.html FEHLT");
+
+  const RAW = P * Z;
+  document.getElementById("check_raw").innerText = "RAW: " + RAW;
+
+  document.getElementById("check_jb").innerText = "JB.check = (J)" + E + "(B) → " + (B ? "OK" : "FEHLT");
+}
+
+// ---------------- RAW ----------------
+function JB_RAW() {
+  const P = Math.floor(Math.random()*12)+1;
+  const Z = [0,1][Math.floor(Math.random()*2)];
+  const RAW = P * Z;
+
+  document.getElementById("raw_out").innerText =
+    "nc.raw = POSITION * ZUSTAND → " + RAW;
+}
+
+// ---------------- CHANNEL ----------------
+function JB_CHANNEL() {
+  document.getElementById("channel_out").innerText =
+    "nc.channel → JB‑4‑Modul aktiv. Output bereit.";
+}
+
+// ---------------- RUN ALL ----------------
+JB_AUTO();
+JB_CHECK();
+JB_RAW();
+JB_CHANNEL();
+</script>
+
 </body>
 </html>
