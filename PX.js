@@ -1,4 +1,4 @@
-export class PX {
+export class PXGateSync {
     constructor() {
         this.mode = "listen";
         this.role = 1;
@@ -6,61 +6,51 @@ export class PX {
         this.impuls = [];
         this.roleMap = {};
         this.patterns = [];
+
+        this.autoGate = true;
     }
 
-    // --- TRAINING MODULES ---
-    trainImpuls(arr) {
-        this.impuls = arr;
-        console.log("PX.trainImpuls →", arr);
+    trainImpuls(arr) { this.impuls = arr; }
+    trainRole(map) { this.roleMap = map; }
+    trainPattern(patternArr) { this.patterns = patternArr; }
+
+    setMode(m) { this.mode = m; }
+    setRole(r) { this.role = r; }
+
+    gate(text) {
+        const first = text.split(" ")[0];
+
+        for (const p of this.patterns) {
+            if (text.startsWith(p.start)) this.role = p.role;
+        }
+
+        if (this.roleMap[first]) this.role = this.roleMap[first];
+
+        if (this.impuls.includes(first)) {
+            return { type: "impuls", role: this.role, text };
+        }
+
+        return { type: "normal", role: this.role, text };
     }
 
-    trainRole(map) {
-        this.roleMap = map;
-        console.log("PX.trainRole →", map);
-    }
-
-    trainPattern(patternArr) {
-        this.patterns = patternArr;
-        console.log("PX.trainPattern →", patternArr);
-    }
-
-    // --- MODE ---
-    setMode(m) {
-        this.mode = m;
-        console.log("PX.mode =", m);
-    }
-
-    // --- ROLE ---
-    setRole(r) {
-        this.role = r;
-        console.log("PX.role =", r);
-    }
-
-    // --- SPEECH PROCESSOR ---
     hear(text) {
         if (this.mode !== "write") return null;
 
-        // 1) Pattern‑Start erkennen
-        for (const p of this.patterns) {
-            if (text.startsWith(p.start)) {
-                this.role = p.role;
-            }
-        }
-
-        // 2) Wörter prüfen
-        const firstWord = text.split(" ")[0];
-        if (this.roleMap[firstWord]) {
-            this.role = this.roleMap[firstWord];
-        }
-
-        // 3) Impuls‑Wörter prüfen
-        if (this.impuls.includes(firstWord)) {
-            console.log("PX Impuls erkannt:", firstWord);
-        }
+        const gateOut = this.autoGate
+            ? this.gate(text)
+            : { role: this.role, text };
 
         return {
-            role: this.role,
-            text
+            role: gateOut.role,
+            text: gateOut.text,
+            gate: gateOut.type
+        };
+    }
+
+    sync(text) {
+        return {
+            px: this.hear(text),
+            sync: true
         };
     }
 }
