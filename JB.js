@@ -18,4 +18,3 @@ export function JB_RAW(P, Z) {
 export function JB_CHANNEL() {
     return "JB‑Channel aktiv";
 }
-
