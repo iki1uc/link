@@ -6,10 +6,11 @@ export const LINK = {
     },
 
     route(action, payload) {
-        if (!this.modules["px"]) return "PX fehlt";
+        const px = this.modules["px"];
+        if (!px) return "PX fehlt";
 
         if (action === "speak") {
-            const out = this.modules["px"].hear(payload.text);
+            const out = px.hear(payload.text);
             return `[nc.link] R${out.role}: ${out.text}`;
         }
 
