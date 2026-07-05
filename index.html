@@ -2,19 +2,59 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>36x36 :: 81_81_1</title>
+<title>NC/PC :: 81_81_1 :: 36x36</title>
 <style>
   body { background:#000; color:#0ff; font-family:monospace; padding:40px; }
   pre { font-size:14px; line-height:14px; }
+  .pulse { animation:pulse 1.2s infinite; }
+  @keyframes pulse { 0%{opacity:0.2;} 50%{opacity:1;} 100%{opacity:0.2;} }
 </style>
 </head>
 <body>
 
-<h2>36×36 :: Orbit‑Matrix</h2>
-<pre id="m"></pre>
+<h2>NC/PC :: 81_81_1 :: 36×36 Orbit‑Output</h2>
+<pre id="matrix" class="pulse"></pre>
+<pre id="cast"></pre>
 
 <script>
-// --- 36x36 Orbit-Matrix ---
+// ---------------------------
+// PXGateSync (Gate)
+// ---------------------------
+function PX(text) {
+  const first = text.split(" ")[0];
+  const role = (first === "81") ? 1 : 2;
+  return { role, text };
+}
+
+// ---------------------------
+// RESPO (Verhalten)
+// ---------------------------
+function RESPO(pxOut) {
+  return `[R${pxOut.role}] ${pxOut.text}`;
+}
+
+// ---------------------------
+// LINK (Routing)
+// ---------------------------
+function LINK(text) {
+  const pxOut = PX(text);
+  return RESPO(pxOut);
+}
+
+// ---------------------------
+// JB (Output)
+// ---------------------------
+function JB() {
+  const L = "81";
+  const K = "LIVE";
+  const P = Math.floor(Math.random()*36);
+  const Z = Math.floor(Math.random()*36);
+  return `${L}:${K}:${P}:${Z}`;
+}
+
+// ---------------------------
+// 36×36 Orbit‑Matrix (SUMMA)
+// ---------------------------
 function orbit36() {
   let out = "";
   for (let y = 0; y < 36; y++) {
@@ -28,18 +68,25 @@ function orbit36() {
   return out;
 }
 
-// --- Mandrake Move ---
+// ---------------------------
+// Mandrake‑Move (ZACK‑KLACK)
+// ---------------------------
 function mandrake() {
-  const tick = Math.floor(Math.random() * 81);
-  return `ZACK-KLACK :: 81_81_1 :: ${tick}`;
+  const tick = Math.floor(Math.random()*81);
+  const jb = JB();
+  const linkOut = LINK("81 orbit");
+  return `ZACK‑KLACK :: ${jb} :: ${linkOut} :: ${tick}`;
 }
 
-// --- Render ---
+// ---------------------------
+// Render
+// ---------------------------
 function run() {
-  const m = document.getElementById("m");
-  m.innerText = orbit36() + "\n" + mandrake();
+  document.getElementById("matrix").innerText = orbit36();
+  document.getElementById("cast").innerText = mandrake();
 }
 
+setInterval(run, 900);
 run();
 </script>
 
