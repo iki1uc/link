@@ -1,5 +1,18 @@
 export const LINK = {
-    route(type, data) {
-        console.log("NC.link →", type, data);
+    modules: {},
+
+    bind(name, mod) {
+        this.modules[name] = mod;
+    },
+
+    route(action, payload) {
+        if (!this.modules["px"]) return "PX fehlt";
+
+        if (action === "speak") {
+            const out = this.modules["px"].hear(payload.text);
+            return `[nc.link] R${out.role}: ${out.text}`;
+        }
+
+        return "Unknown action";
     }
 };
