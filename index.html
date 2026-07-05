@@ -1,86 +1,46 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8">
-  <title>NC.link – Konferenz + JB‑Channel (RE‑FINAL)</title>
-  <style>
-    body { font-family: monospace; background:#000; color:#0ff; padding:20px; }
-    .box { border:1px solid #0ff; padding:20px; width:420px; margin-bottom:20px; }
-    h2 { margin-top:0; }
-    hr { border:0; border-top:1px solid #0ff; margin:15px 0; }
-    pre { white-space:pre-wrap; }
-  </style>
+<meta charset="UTF-8">
+<title>36x36 :: 81_81_1</title>
+<style>
+  body { background:#000; color:#0ff; font-family:monospace; padding:40px; }
+  pre { font-size:14px; line-height:14px; }
+</style>
 </head>
 <body>
 
-<h2>NC.link – 3er Konferenz + JB‑Channel (RE‑FINAL)</h2>
+<h2>36×36 :: Orbit‑Matrix</h2>
+<pre id="m"></pre>
 
-<div class="box">
-  <h3>Konferenz</h3>
-  <pre id="chat"></pre>
-</div>
-
-<div class="box">
-  <h3>nc.auto()</h3>
-  <pre id="auto"></pre>
-</div>
-
-<div class="box">
-  <h3>nc.check()</h3>
-  <pre id="check"></pre>
-</div>
-
-<div class="box">
-  <h3>nc.raw()</h3>
-  <pre id="raw"></pre>
-</div>
-
-<div class="box">
-  <h3>nc.channel()</h3>
-  <pre id="channel"></pre>
-</div>
-
-<script type="module">
-  import { PXGateSync as PX } from "./PX.js";
-  import { RESPO_SPEAKWRITE } from "./RESPO-SPEAKWRITE.js";
-  import { LINK } from "./link.js";
-  import { JB_AUTO, JB_CHECK, JB_RAW, JB_CHANNEL } from "./JB.js";
-
-  const px = new PX();
-  const respo = new RESPO_SPEAKWRITE();
-
-  LINK.bind("px", px);
-  LINK.bind("respo", respo);
-
-  px.setMode("write");
-
-  const chat = document.getElementById("chat");
-
-  function speak(role, text) {
-    px.setRole(role);
-    const out = px.hear(text);
-    respo.process(out);
-    chat.innerText += `[R${out.role}] ${out.text}\n`;
+<script>
+// --- 36x36 Orbit-Matrix ---
+function orbit36() {
+  let out = "";
+  for (let y = 0; y < 36; y++) {
+    let row = "";
+    for (let x = 0; x < 36; x++) {
+      const v = (x * y + 81) % 81;
+      row += (v < 10 ? "0" + v : v) + " ";
+    }
+    out += row + "\n";
   }
+  return out;
+}
 
-  speak(1, "Hallo, Sprecher 1 ist da.");
-  speak(2, "Sprecher 2 hört mit.");
-  speak(3, "Sprecher 3 ist eingestiegen.");
-  speak(1, "Konferenz läuft.");
+// --- Mandrake Move ---
+function mandrake() {
+  const tick = Math.floor(Math.random() * 81);
+  return `ZACK-KLACK :: 81_81_1 :: ${tick}`;
+}
 
-  const auto = JB_AUTO();
-  document.getElementById("auto").innerText =
-    JSON.stringify(auto, null, 2);
+// --- Render ---
+function run() {
+  const m = document.getElementById("m");
+  m.innerText = orbit36() + "\n" + mandrake();
+}
 
-  const check = JB_CHECK();
-  document.getElementById("check").innerText =
-    JSON.stringify(check, null, 2);
-
-  const raw = JB_RAW(check.P, check.Z);
-  document.getElementById("raw").innerText = raw;
-
-  document.getElementById("channel").innerText =
-    JB_CHANNEL();
+run();
 </script>
 
 </body>
