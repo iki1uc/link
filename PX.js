@@ -10,13 +10,16 @@ export class PXGateSync {
         this.autoGate = true;
     }
 
+    // TRAINING
     trainImpuls(arr) { this.impuls = arr; }
     trainRole(map) { this.roleMap = map; }
     trainPattern(patternArr) { this.patterns = patternArr; }
 
+    // MODE
     setMode(m) { this.mode = m; }
     setRole(r) { this.role = r; }
 
+    // GATE
     gate(text) {
         const first = text.split(" ")[0];
 
@@ -33,6 +36,7 @@ export class PXGateSync {
         return { type: "normal", role: this.role, text };
     }
 
+    // SPEECH
     hear(text) {
         if (this.mode !== "write") return null;
 
@@ -47,6 +51,7 @@ export class PXGateSync {
         };
     }
 
+    // SYNC
     sync(text) {
         return {
             px: this.hear(text),
