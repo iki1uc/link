@@ -1,94 +1,23 @@
-<!DOCTYPE html>
-<html lang="de">
-<head>
-<meta charset="UTF-8">
-<title>81_81_1 :: Alle 4</title>
-<style>
-  body { background:#000; color:#0ff; font-family:monospace; padding:40px; }
-  pre { font-size:14px; line-height:14px; }
-  .pulse { animation:pulse 1.2s infinite; }
-  @keyframes pulse { 0%{opacity:0.2;} 50%{opacity:1;} 100%{opacity:0.2;} }
-</style>
-</head>
-<body>
+<script type="module">
+import { LINK_BOOT } from "./link-bootstrap.js";
 
-<h2>81_81_1 :: Alle 4 :: Orbit‑Flow</h2>
-<pre id="matrix" class="pulse"></pre>
-<pre id="cast"></pre>
+window.startShow = async () => {
 
-<script>
-// ---------------------------
-// PX (Gate)
-// ---------------------------
-function PX(text) {
-  const first = text.split(" ")[0];
-  const role = (first === "81") ? 1 : 2;
-  return { role, text };
-}
+  const result = await LINK_BOOT.start();
 
-// ---------------------------
-// RESPO (Verhalten)
-// ---------------------------
-function RESPO(pxOut) {
-  return `[R${pxOut.role}] ${pxOut.text}`;
-}
+  document.getElementById("qiOut").innerText =
+    JSON.stringify(result.jb, null, 2);
 
-// ---------------------------
-// LINK (Routing)
-// ---------------------------
-function LINK(text) {
-  const pxOut = PX(text);
-  return RESPO(pxOut);
-}
+  document.getElementById("iqqOut").innerText =
+    JSON.stringify(result.pc, null, 2);
 
-// ---------------------------
-// JB (Output)
-// ---------------------------
-function JB() {
-  const L = "81";
-  const K = "LIVE";
-  const P = Math.floor(Math.random()*36);
-  const Z = Math.floor(Math.random()*36);
-  return `${L}:${K}:${P}:${Z}`;
-}
+  document.getElementById("octaOut").innerText =
+    JSON.stringify(result.pq, null, 2);
 
-// ---------------------------
-// 36×36 Orbit‑Matrix (SUMMA)
-// ---------------------------
-function orbit36() {
-  let out = "";
-  for (let y = 0; y < 36; y++) {
-    let row = "";
-    for (let x = 0; x < 36; x++) {
-      const v = (x * y + 81) % 81;
-      row += (v < 10 ? "0" + v : v) + " ";
-    }
-    out += row + "\n";
-  }
-  return out;
-}
+  document.getElementById("connectOut").innerText =
+    JSON.stringify(result.connectInit, null, 2);
 
-// ---------------------------
-// Mandrake‑Move (ZACK‑KLACK)
-// ---------------------------
-function mandrake() {
-  const tick = Math.floor(Math.random()*81);
-  const jb = JB();
-  const linkOut = LINK("81 orbit");
-  return `ZACK‑KLACK :: ${jb} :: ${linkOut} :: ${tick}`;
-}
-
-// ---------------------------
-// Render
-// ---------------------------
-function run() {
-  document.getElementById("matrix").innerText = orbit36();
-  document.getElementById("cast").innerText = mandrake();
-}
-
-setInterval(run, 900);
-run();
+  document.getElementById("syncOut").innerText =
+    result.syncInit;
+};
 </script>
-
-</body>
-</html>
