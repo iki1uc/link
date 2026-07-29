@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>IKI1UC · IDE</title>
+
+<style>
+body { background:#000; color:#0ff; font-family:Consolas; margin:0; }
+#nav { display:flex; background:#111; border-bottom:2px solid #0f0; }
+#nav button {
+    flex:1; padding:15px; background:#111; color:#0f0;
+    border:none; cursor:pointer; font-size:16px;
+}
+#nav button.active { background:#0f0; color:#000; }
+.tab { display:none; padding:20px; }
+pre { background:#111; padding:12px; border:1px solid #333; border-radius:6px; }
+canvas { background:#111; border:1px solid #333; }
+#input { width:400px; padding:10px; background:#111; color:#0f0; border:1px solid #333; }
+</style>
+
+<script type="module">
+
+// =========================
+// AUTO MODULE LOADER
+// =========================
+
+async function autoLoad() {
+    const files = [
+        "link.js","NC.link","NCLinkFullSync.js","PX.js","PX-Gate.js",
+        "PXGateSync.js","PQ.js","PC.js","RAWATOR.js",
+        "RESPO-SPEAKWRITE.js","RESPOSyncSpeakWrite.js","JB.js"
+    ];
+
+    const out = {};
+    for(const f of files){
+        try { out[f] = await import(`./${f}`); }
+        catch(e){ out[f] = { error:e.message }; }
+    }
+    return out;
+}
+
+function safe(name, fn, arg){
+    try { return fn(arg) ?? `[${name}] undefined`; }
+    catch(e){ return `[${name}] ERROR: ${e.message}`; }
+}
+
+// =========================
+// PIPELINE
+// =========================
+
+async function runPipeline(input){
+    const M = await autoLoad();
+
+    const link = safe("LINK", M["link.js"].load ?? M["link.js"].run, input);
+    const nc = safe("NC", M["NC.link"].process ?? M["NC.link"].run, link);
+    const ncSync = safe("NCFullSync", M["NCLinkFullSync.js"].sync ?? M["NCLinkFullSync.js"].run, nc);
+
+    const px = safe("PX", M["PX.js"].run ?? M["PX.js"].default, ncSync);
+    const pxGate = safe("PXGate", M["PX-Gate.js"].auto ?? M["PX-Gate.js"].run, px);
+    const pxGateSync = safe("PXGateSync", M["PXGateSync.js"].sync ?? M["PXGateSync.js"].run, pxGate);
+
+    const pq = safe("PQ", M["PQ.js"].queue ?? M["PQ.js"].run, pxGateSync);
+    const pc = safe("PC", M["PC.js"].compute ?? M["PC.js"].run, pq);
+
+    const raw = safe("RAWATOR", M["RAWATOR.js"].process ?? M["RAWATOR.js"].run, pc);
+
+    const respo = safe("RESPO", M["RESPO-SPEAKWRITE.js"].process ?? M["RESPO-SPEAKWRITE.js"].run, raw);
+    const respoSync = safe("RESPOSync", M["RESPOSyncSpeakWrite.js"].sync ?? M["RESPOSyncSpeakWrite.js"].run, respo);
+
+    const jb = safe("JB", M["JB.js"].finalize ?? M["JB.js"].run, respoSync);
+
+    return { M, link, nc, ncSync, px, pxGate, pxGateSync, pq, pc, raw, respo, respoSync, jb };
+}
+
+// =========================
+// NC SYNC GRAPHIC
+// =========================
+
+function drawNCSync(ctx, data){
+    ctx.clearRect(0,0,600,300);
+    ctx.strokeStyle="#0f0";
+    ctx.lineWidth=2;
+
+    ctx.beginPath();
+    ctx.moveTo(300,150);
+    ctx.lineTo(300 + (data.axis?.B ?? 0)*10, 150);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(300,150);
+    ctx.lineTo(300, 150 - (data.axis?.H ?? 0)*10);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(300,150);
+    ctx.lineTo(300 + (data.axis?.T ?? 0)*10, 150 - (data.axis?.T ?? 0)*5);
+    ctx.stroke();
+}
+
+// =========================
+// PX GATE ANIMATION
+// =========================
+
+function animatePXGate(sync){
+    const box = document.getElementById("pxBox");
+    const angle = sync.angle ?? 45;
+    box.style.transform = `rotate(${angle}deg)`;
+}
+
+// =========================
+// JB FINAL VIEWER
+// =========================
+
+function showJB(jb){
+    document.getElementById("jbOut").textContent =
+        JSON.stringify(jb, null, 2);
+}
+
+// =========================
+// UI
+// =========================
+
+document.addEventListener("keydown", async e=>{
+    if(e.key==="Enter"){
+        const input = document.getElementById("input").value;
+        const out = await runPipeline(input);
+
+        // Visualizer
+        for(const k of ["link","nc","ncSync","px","pxGate","pxGateSync","pq","pc","raw","respo","respoSync","jb"]){
+            document.getElementById(k).textContent = JSON.stringify(out[k], null, 2);
+        }
+
+        // NC Sync Grafik
+        drawNCSync(document.getElementById("ncCanvas").getContext("2d"), out.ncSync);
+
+        // PX Gate Animation
+        animatePXGate(out.pxGateSync);
+
+        // JB Final Viewer
+        showJB(out.jb);
+    }
+});
+
+// =========================
+// TAB SWITCHING
+// =========================
+
+function showTab(id){
+    document.querySelectorAll(".tab").forEach(t=>t.style.display="none");
+    document.getElementById(id).style.display="block";
+
+    document.querySelectorAll("#nav button").forEach(b=>b.classList.remove("active"));
+    document.getElementById("btn_"+id).classList.add("active");
+}
+
+window.showTab = showTab;
+
+</script>
+</head>
+
+<body>
+
+<div id="nav">
+    <button id="btn_dashboard" onclick="showTab('dashboard')" class="active">Dashboard</button>
+    <button id="btn_visualizer" onclick="showTab('visualizer')">Visualizer</button>
+    <button id="btn_nc" onclick="showTab('nc')">NC Sync Grafik</button>
+    <button id="btn_px" onclick="showTab('px')">PX Gate Animation</button>
+    <button id="btn_jb" onclick="showTab('jb')">JB Final Viewer</button>
+</div>
+
+<div id="dashboard" class="tab" style="display:block;">
+    <h1>IKI1UC · IDE Dashboard</h1>
+    <input id="input" placeholder="ENTER → Run Pipeline">
+    <p>Gib Text ein und drücke ENTER.</p>
+</div>
+
+<div id="visualizer" class="tab">
+    <h2>Pipeline Visualizer</h2>
+    <pre id="link"></pre>
+    <pre id="nc"></pre>
+    <pre id="ncSync"></pre>
+    <pre id="px"></pre>
+    <pre id="pxGate"></pre>
+    <pre id="pxGateSync"></pre>
+    <pre id="pq"></pre>
+    <pre id="pc"></pre>
+    <pre id="raw"></pre>
+    <pre id="respo"></pre>
+    <pre id="respoSync"></pre>
+    <pre id="jb"></pre>
+</div>
+
+<div id="nc" class="tab">
+    <h2>NC Sync Grafik</h2>
+    <canvas id="ncCanvas" width="600" height="300"></canvas>
+</div>
+
+<div id="px" class="tab">
+    <h2>PX Gate Animation</h2>
+    <div id="pxBox" style="width:200px;height:200px;background:#111;border:2px solid #0f0;"></div>
+</div>
+
+<div id="jb" class="tab">
+    <h2>JB Final Output Viewer</h2>
+    <pre id="jbOut"></pre>
+</div>
+
+</body>
+</html>
