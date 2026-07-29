@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>PX Gate Animation</title>
+
+<style>
+body { background:#000; color:#0ff; font-family:Consolas; padding:20px; }
+#box { width:200px; height:200px; background:#111; border:2px solid #0f0; }
+</style>
+
+<script type="module">
+import * as PX from "./PX.js";
+import * as PXGATE from "./PX-Gate.js";
+import * as PXGATESYNC from "./PXGateSync.js";
+
+document.addEventListener("keydown", e=>{
+    if(e.key==="Enter"){
+        const input = document.getElementById("input").value;
+
+        const px = PX.run(input);
+        const gate = PXGATE.auto(px);
+        const sync = PXGATESYNC.sync(gate);
+
+        const box = document.getElementById("box");
+        box.style.transform = `rotate(${sync.angle ?? 45}deg)`;
+    }
+});
+</script>
+</head>
+
+<body>
+<h1>PX Gate Animation</h1>
+<input id="input" placeholder="ENTER → Animate">
+<br><br>
+<div id="box"></div>
+</body>
+</html>
