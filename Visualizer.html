@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>IKI1UC · Visualizer</title>
+
+<style>
+body { background:#000; color:#0ff; font-family:Consolas; padding:20px; }
+h1 { color:#6cf; }
+h2 { color:#0f0; margin-top:30px; }
+pre { background:#111; padding:12px; border:1px solid #333; border-radius:6px; }
+.module { padding:10px; margin:10px 0; background:#111; border-left:4px solid #0f0; }
+</style>
+
+<script type="module">
+
+async function autoLoad() {
+    const files = [
+        "link.js","NC.link","NCLinkFullSync.js","PX.js","PX-Gate.js",
+        "PXGateSync.js","PQ.js","PC.js","RAWATOR.js",
+        "RESPO-SPEAKWRITE.js","RESPOSyncSpeakWrite.js","JB.js"
+    ];
+
+    const out = {};
+    for(const f of files){
+        try { out[f] = await import(`./${f}`); }
+        catch(e){ out[f] = { error:e.message }; }
+    }
+    return out;
+}
+
+function safe(name, fn, arg){
+    try { return fn(arg) ?? `[${name}] undefined`; }
+    catch(e){ return `[${name}] ERROR: ${e.message}`; }
+}
+
+async function runPipeline(input){
+    const M = await autoLoad();
+
+    const link = safe("LINK", M["link.js"].load ?? M["link.js"].run, input);
+    const nc = safe("NC", M["NC.link"].process ?? M["NC.link"].run, link);
+    const ncSync = safe("NCFullSync", M["NCLinkFullSync.js"].sync ?? M["NCLinkFullSync.js"].run, nc);
+
+    const px = safe("PX", M["PX.js"].run ?? M["PX.js"].default, ncSync);
+    const pxGate = safe("PXGate", M["PX-Gate.js"].auto ?? M["PX-Gate.js"].run, px);
+    const pxGateSync = safe("PXGateSync", M["PXGateSync.js"].sync ?? M["PXGateSync.js"].run, pxGate);
+
+    const pq = safe("PQ", M["PQ.js"].queue ?? M["PQ.js"].run, pxGateSync);
+    const pc = safe("PC", M["PC.js"].compute ?? M["PC.js"].run, pq);
+
+    const raw = safe("RAWATOR", M["RAWATOR.js"].process ?? M["RAWATOR.js"].run, pc);
+
+    const respo = safe("RESPO", M["RESPO-SPEAKWRITE.js"].process ?? M["RESPO-SPEAKWRITE.js"].run, raw);
+    const respoSync = safe("RESPOSync", M["RESPOSyncSpeakWrite.js"].sync ?? M["RESPOSyncSpeakWrite.js"].run, respo);
+
+    const jb = safe("JB", M["JB.js"].finalize ?? M["JB.js"].run, respoSync);
+
+    return { M, link, nc, ncSync, px, pxGate, pxGateSync, pq, pc, raw, respo, respoSync, jb };
+}
+
+document.addEventListener("keydown", async e=>{
+    if(e.key==="Enter"){
+        const input = document.getElementById("input").value;
+        const out = await runPipeline(input);
+
+        document.getElementById("modules").textContent =
+            JSON.stringify(Object.keys(out.M), null, 2);
+
+        for(const k of ["link","nc","ncSync","px","pxGate","pxGateSync","pq","pc","raw","respo","respoSync","jb"]){
+            document.getElementById(k).textContent = JSON.stringify(out[k], null, 2);
+        }
+    }
+});
+
+</script>
+</head>
+
+<body>
+
+<h1>IKI1UC · Visualizer</h1>
+
+<input id="input" placeholder="ENTER → Run">
+
+<h2>Module</h2>
+<pre id="modules">Warte…</pre>
+
+<h2>LINK</h2><pre id="link"></pre>
+<h2>NC</h2><pre id="nc"></pre>
+<h2>NC Sync</h2><pre id="ncSync"></pre>
+<h2>PX</h2><pre id="px"></pre>
+<h2>PX Gate</h2><pre id="pxGate"></pre>
+<h2>PX Gate Sync</h2><pre id="pxGateSync"></pre>
+<h2>PQ</h2><pre id="pq"></pre>
+<h2>PC</h2><pre id="pc"></pre>
+<h2>RAWATOR</h2><pre id="raw"></pre>
+<h2>RESPO</h2><pre id="respo"></pre>
+<h2>RESPO Sync</h2><pre id="respoSync"></pre>
+<h2>JB Final</h2><pre id="jb"></pre>
+
+</body>
+</html>
