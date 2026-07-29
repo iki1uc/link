@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>IKI1UC · LINK Runtime Debug</title>
+<title>IKI1UC · AUTO Runtime</title>
 
 <style>
 body { background:#000; color:#0ff; font-family:Consolas; padding:20px; }
@@ -10,23 +10,49 @@ h1 { color:#6cf; }
 h2 { color:#0f0; margin-top:30px; }
 pre { background:#111; padding:12px; border:1px solid #333; border-radius:6px; }
 #input { width:400px; padding:10px; background:#111; color:#0f0; border:1px solid #333; }
-button { margin:5px; padding:10px; background:#111; color:#0f0; border:1px solid #333; }
+.module-box { border:1px solid #333; padding:10px; margin:10px 0; background:#111; }
+.pipeline-step { padding:8px; margin:4px; background:#222; border-left:4px solid #0f0; }
+.error { color:#f33; }
 </style>
 
 <script type="module">
 
-import * as LINK from "./link.js";
-import * as NC from "./NC.link";
-import * as NCSYNC from "./NCLinkFullSync.js";
-import * as PX from "./PX.js";
-import * as PXGATE from "./PX-Gate.js";
-import * as PXGATESYNC from "./PXGateSync.js";
-import * as PQ from "./PQ.js";
-import * as PC from "./PC.js";
-import * as RAWATOR from "./RAWATOR.js";
-import * as RESPO from "./RESPO-SPEAKWRITE.js";
-import * as RESPOSYNC from "./RESPOSyncSpeakWrite.js";
-import * as JB from "./JB.js";
+// =========================
+// AUTO-MODULE LOADER
+// =========================
+
+async function autoLoadModules() {
+    const files = [
+        "link.js",
+        "NC.link",
+        "NCLinkFullSync.js",
+        "PX.js",
+        "PX-Gate.js",
+        "PXGateSync.js",
+        "PQ.js",
+        "PC.js",
+        "RAWATOR.js",
+        "RESPO-SPEAKWRITE.js",
+        "RESPOSyncSpeakWrite.js",
+        "JB.js"
+    ];
+
+    const modules = {};
+
+    for (const file of files) {
+        try {
+            modules[file] = await import(`./${file}`);
+        } catch (e) {
+            modules[file] = { error: e.message };
+        }
+    }
+
+    return modules;
+}
+
+// =========================
+// SAFE RUNNER
+// =========================
 
 function safeRun(name, fn, arg){
     try {
@@ -37,34 +63,64 @@ function safeRun(name, fn, arg){
     }
 }
 
-function PIPELINE_RUN(input){
+// =========================
+// PIPELINE
+// =========================
 
-    const link = safeRun("LINK", LINK.load ?? LINK.default ?? LINK.run, input);
-    const nc = safeRun("NC", NC.process ?? NC.run, link);
-    const ncSync = safeRun("NCFullSync", NCSYNC.sync ?? NCSYNC.run, nc);
+async function PIPELINE_RUN(input){
 
-    const px = safeRun("PX", PX.run ?? PX.default, ncSync);
-    const pxGate = safeRun("PXGate", PXGATE.auto ?? PXGATE.run, px);
-    const pxGateSync = safeRun("PXGateSync", PXGATESYNC.sync ?? PXGATESYNC.run, pxGate);
+    const M = await autoLoadModules();
 
-    const pq = safeRun("PQ", PQ.queue ?? PQ.run, pxGateSync);
-    const pc = safeRun("PC", PC.compute ?? PC.run, pq);
+    const link = safeRun("LINK", M["link.js"].load ?? M["link.js"].run, input);
+    const nc = safeRun("NC", M["NC.link"].process ?? M["NC.link"].run, link);
+    const ncSync = safeRun("NCFullSync", M["NCLinkFullSync.js"].sync ?? M["NCLinkFullSync.js"].run, nc);
 
-    const raw = safeRun("RAWATOR", RAWATOR.process ?? RAWATOR.run, pc);
+    const px = safeRun("PX", M["PX.js"].run ?? M["PX.js"].default, ncSync);
+    const pxGate = safeRun("PXGate", M["PX-Gate.js"].auto ?? M["PX-Gate.js"].run, px);
+    const pxGateSync = safeRun("PXGateSync", M["PXGateSync.js"].sync ?? M["PXGateSync.js"].run, pxGate);
 
-    const respo = safeRun("RESPO", RESPO.process ?? RESPO.run, raw);
-    const respoSync = safeRun("RESPOSync", RESPOSYNC.sync ?? RESPOSYNC.run, respo);
+    const pq = safeRun("PQ", M["PQ.js"].queue ?? M["PQ.js"].run, pxGateSync);
+    const pc = safeRun("PC", M["PC.js"].compute ?? M["PC.js"].run, pq);
 
-    const jb = safeRun("JB", JB.finalize ?? JB.run, respoSync);
+    const raw = safeRun("RAWATOR", M["RAWATOR.js"].process ?? M["RAWATOR.js"].run, pc);
 
-    return { link, nc, ncSync, px, pxGate, pxGateSync, pq, pc, raw, respo, respoSync, jb };
+    const respo = safeRun("RESPO", M["RESPO-SPEAKWRITE.js"].process ?? M["RESPO-SPEAKWRITE.js"].run, raw);
+    const respoSync = safeRun("RESPOSync", M["RESPOSyncSpeakWrite.js"].sync ?? M["RESPOSyncSpeakWrite.js"].run, respo);
+
+    const jb = safeRun("JB", M["JB.js"].finalize ?? M["JB.js"].run, respoSync);
+
+    return { M, link, nc, ncSync, px, pxGate, pxGateSync, pq, pc, raw, respo, respoSync, jb };
 }
 
-document.addEventListener("keydown", e => {
+// =========================
+// UI
+// =========================
+
+document.addEventListener("keydown", async e => {
     if(e.key === "Enter"){
         const text = document.getElementById("input").value;
-        const out = PIPELINE_RUN(text);
+        const out = await PIPELINE_RUN(text);
 
+        // MODULE OVERVIEW
+        document.getElementById("modules").textContent =
+            JSON.stringify(Object.keys(out.M), null, 2);
+
+        // PIPELINE GRAPHIC
+        document.getElementById("pipeline").innerHTML = `
+            <div class="pipeline-step">LINK → NC</div>
+            <div class="pipeline-step">NC → NC Full Sync</div>
+            <div class="pipeline-step">NC Full Sync → PX</div>
+            <div class="pipeline-step">PX → PX Gate</div>
+            <div class="pipeline-step">PX Gate → PX Gate Sync</div>
+            <div class="pipeline-step">PX Gate Sync → PQ</div>
+            <div class="pipeline-step">PQ → PC</div>
+            <div class="pipeline-step">PC → RAWATOR</div>
+            <div class="pipeline-step">RAWATOR → RESPO</div>
+            <div class="pipeline-step">RESPO → RESPO Sync</div>
+            <div class="pipeline-step">RESPO Sync → JB Final</div>
+        `;
+
+        // MODULE OUTPUTS
         document.getElementById("link").textContent = JSON.stringify(out.link, null, 2);
         document.getElementById("nc").textContent = JSON.stringify(out.nc, null, 2);
         document.getElementById("ncSync").textContent = JSON.stringify(out.ncSync, null, 2);
@@ -86,15 +142,21 @@ document.addEventListener("keydown", e => {
 
 <body>
 
-<h1>IKI1UC · LINK Runtime Debug</h1>
+<h1>IKI1UC · AUTO Runtime</h1>
 
 <h2>Input</h2>
 <input id="input" placeholder="ENTER → Pipeline Run">
 
+<h2>Module automatisch erkannt</h2>
+<pre id="modules">Warte…</pre>
+
+<h2>Pipeline grafisch</h2>
+<div id="pipeline"></div>
+
 <h2>LINK</h2>
 <pre id="link">Warte…</pre>
 
-<h2>NC</h2>
+<h2>NC.link</h2>
 <pre id="nc">Warte…</pre>
 
 <h2>NC Full Sync</h2>
@@ -103,7 +165,7 @@ document.addEventListener("keydown", e => {
 <h2>PX</h2>
 <pre id="px">Warte…</pre>
 
-<h2>PX Gate</h2>
+<h2>PX Gate (Debugger)</h2>
 <pre id="pxGate">Warte…</pre>
 
 <h2>PX Gate Sync</h2>
