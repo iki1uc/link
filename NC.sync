@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>NC Sync Grafik</title>
+
+<style>
+body { background:#000; color:#0ff; font-family:Consolas; padding:20px; }
+canvas { background:#111; border:1px solid #333; }
+</style>
+
+<script type="module">
+import * as NC from "./NC.link";
+import * as NCSYNC from "./NCLinkFullSync.js";
+
+function drawAxes(ctx, data){
+    ctx.clearRect(0,0,600,300);
+    ctx.strokeStyle="#0f0";
+    ctx.lineWidth=2;
+
+    ctx.beginPath();
+    ctx.moveTo(300,150);
+    ctx.lineTo(300 + data.axis.B*10, 150);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(300,150);
+    ctx.lineTo(300, 150 - data.axis.H*10);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(300,150);
+    ctx.lineTo(300 + data.axis.T*10, 150 - data.axis.T*5);
+    ctx.stroke();
+}
+
+document.addEventListener("keydown", e=>{
+    if(e.key==="Enter"){
+        const input = document.getElementById("input").value;
+        const link = NC.process(input);
+        const sync = NCSYNC.sync(link);
+
+        const ctx = document.getElementById("c").getContext("2d");
+        drawAxes(ctx, sync);
+    }
+});
+</script>
+</head>
+
+<body>
+<h1>NC Sync Grafik</h1>
+<input id="input" placeholder="ENTER → NC Sync">
+<br><br>
+<canvas id="c" width="600" height="300"></canvas>
+</body>
+</html>
