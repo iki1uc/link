@@ -1,23 +1,131 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>IKI1UC · LINK Runtime Debug</title>
+
+<style>
+body { background:#000; color:#0ff; font-family:Consolas; padding:20px; }
+h1 { color:#6cf; }
+h2 { color:#0f0; margin-top:30px; }
+pre { background:#111; padding:12px; border:1px solid #333; border-radius:6px; }
+#input { width:400px; padding:10px; background:#111; color:#0f0; border:1px solid #333; }
+button { margin:5px; padding:10px; background:#111; color:#0f0; border:1px solid #333; }
+</style>
+
 <script type="module">
-import { LINK_BOOT } from "./link-bootstrap.js";
 
-window.startShow = async () => {
+import * as LINK from "./link.js";
+import * as NC from "./NC.link";
+import * as NCSYNC from "./NCLinkFullSync.js";
+import * as PX from "./PX.js";
+import * as PXGATE from "./PX-Gate.js";
+import * as PXGATESYNC from "./PXGateSync.js";
+import * as PQ from "./PQ.js";
+import * as PC from "./PC.js";
+import * as RAWATOR from "./RAWATOR.js";
+import * as RESPO from "./RESPO-SPEAKWRITE.js";
+import * as RESPOSYNC from "./RESPOSyncSpeakWrite.js";
+import * as JB from "./JB.js";
 
-  const result = await LINK_BOOT.start();
+function safeRun(name, fn, arg){
+    try {
+        const out = fn(arg);
+        return out ?? `[${name}] returned undefined`;
+    } catch(e){
+        return `[${name}] ERROR: ${e.message}`;
+    }
+}
 
-  document.getElementById("qiOut").innerText =
-    JSON.stringify(result.jb, null, 2);
+function PIPELINE_RUN(input){
 
-  document.getElementById("iqqOut").innerText =
-    JSON.stringify(result.pc, null, 2);
+    const link = safeRun("LINK", LINK.load ?? LINK.default ?? LINK.run, input);
+    const nc = safeRun("NC", NC.process ?? NC.run, link);
+    const ncSync = safeRun("NCFullSync", NCSYNC.sync ?? NCSYNC.run, nc);
 
-  document.getElementById("octaOut").innerText =
-    JSON.stringify(result.pq, null, 2);
+    const px = safeRun("PX", PX.run ?? PX.default, ncSync);
+    const pxGate = safeRun("PXGate", PXGATE.auto ?? PXGATE.run, px);
+    const pxGateSync = safeRun("PXGateSync", PXGATESYNC.sync ?? PXGATESYNC.run, pxGate);
 
-  document.getElementById("connectOut").innerText =
-    JSON.stringify(result.connectInit, null, 2);
+    const pq = safeRun("PQ", PQ.queue ?? PQ.run, pxGateSync);
+    const pc = safeRun("PC", PC.compute ?? PC.run, pq);
 
-  document.getElementById("syncOut").innerText =
-    result.syncInit;
-};
+    const raw = safeRun("RAWATOR", RAWATOR.process ?? RAWATOR.run, pc);
+
+    const respo = safeRun("RESPO", RESPO.process ?? RESPO.run, raw);
+    const respoSync = safeRun("RESPOSync", RESPOSYNC.sync ?? RESPOSYNC.run, respo);
+
+    const jb = safeRun("JB", JB.finalize ?? JB.run, respoSync);
+
+    return { link, nc, ncSync, px, pxGate, pxGateSync, pq, pc, raw, respo, respoSync, jb };
+}
+
+document.addEventListener("keydown", e => {
+    if(e.key === "Enter"){
+        const text = document.getElementById("input").value;
+        const out = PIPELINE_RUN(text);
+
+        document.getElementById("link").textContent = JSON.stringify(out.link, null, 2);
+        document.getElementById("nc").textContent = JSON.stringify(out.nc, null, 2);
+        document.getElementById("ncSync").textContent = JSON.stringify(out.ncSync, null, 2);
+        document.getElementById("px").textContent = JSON.stringify(out.px, null, 2);
+        document.getElementById("pxGate").textContent = JSON.stringify(out.pxGate, null, 2);
+        document.getElementById("pxGateSync").textContent = JSON.stringify(out.pxGateSync, null, 2);
+        document.getElementById("pq").textContent = JSON.stringify(out.pq, null, 2);
+        document.getElementById("pc").textContent = JSON.stringify(out.pc, null, 2);
+        document.getElementById("raw").textContent = JSON.stringify(out.raw, null, 2);
+        document.getElementById("respo").textContent = JSON.stringify(out.respo, null, 2);
+        document.getElementById("respoSync").textContent = JSON.stringify(out.respoSync, null, 2);
+        document.getElementById("jb").textContent = JSON.stringify(out.jb, null, 2);
+    }
+});
+
 </script>
+
+</head>
+
+<body>
+
+<h1>IKI1UC · LINK Runtime Debug</h1>
+
+<h2>Input</h2>
+<input id="input" placeholder="ENTER → Pipeline Run">
+
+<h2>LINK</h2>
+<pre id="link">Warte…</pre>
+
+<h2>NC</h2>
+<pre id="nc">Warte…</pre>
+
+<h2>NC Full Sync</h2>
+<pre id="ncSync">Warte…</pre>
+
+<h2>PX</h2>
+<pre id="px">Warte…</pre>
+
+<h2>PX Gate</h2>
+<pre id="pxGate">Warte…</pre>
+
+<h2>PX Gate Sync</h2>
+<pre id="pxGateSync">Warte…</pre>
+
+<h2>PQ</h2>
+<pre id="pq">Warte…</pre>
+
+<h2>PC</h2>
+<pre id="pc">Warte…</pre>
+
+<h2>RAWATOR</h2>
+<pre id="raw">Warte…</pre>
+
+<h2>RESPO SPEAKWRITE</h2>
+<pre id="respo">Warte…</pre>
+
+<h2>RESPO Sync SpeakWrite</h2>
+<pre id="respoSync">Warte…</pre>
+
+<h2>JB Final</h2>
+<pre id="jb">Warte…</pre>
+
+</body>
+</html>
