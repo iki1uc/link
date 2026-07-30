@@ -1,3 +1,15 @@
+INIT = [1,0,0]
+QI   = [1,1,0]
+IQQ  = [0,1,1]
+
+ANKER.vector = {
+    init: INIT,
+    qi: QI,
+    iqq: IQQ,
+    state: [QI[0], IQQ[1], INIT[2]]
+}
+
+
 import { CONNECT } from "./CONNECT/CONNECT.js";
 import { SYNC } from "./SYNC/SYNC.js";
 
