@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LINK.ATME — Wurzel v1</title>
+<style>
+  :root{
+    --bg:#05070d;--panel:#0a0f19;--panel2:#050912;--line:#243044;
+    --fg:#e6eaf2;--mu:#7f8ca3;--dim:#6b7a93;
+    --cyan:#00e5ff;--gold:#ffd700;--pink:#ff2d9a;
+    --life:#4dff9b;--unlife:#3a4a5f;--ok:#4dff9b;--bad:#ff5974;
+    --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--fg);font-family:var(--mono);font-size:12px;line-height:1.5;min-height:100vh}
+  .wrap{max-width:1000px;margin:0 auto;padding:14px}
+  .hdr{border:1px solid var(--line);border-radius:16px;padding:14px 18px;
+    background:linear-gradient(180deg,rgba(14,20,34,.95),rgba(10,15,25,.92));margin-bottom:10px}
+  .hdr h1{font-family:Syne,system-ui;font-weight:800;font-size:22px;
+    letter-spacing:.12em;color:var(--gold);line-height:1}
+  .hdr .sub{font-size:10px;color:var(--dim);letter-spacing:.18em;margin-top:4px}
+  .hdr .sub2{font-size:11px;color:var(--mu);margin-top:6px;letter-spacing:.02em}
+  .chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:10px}
+  .chip{padding:3px 9px;border-radius:999px;border:1px solid var(--line);
+    background:var(--panel2);font-size:10px;color:var(--dim);
+    display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
+  .chip.gold{color:var(--gold);border-color:rgba(255,215,0,.4);background:rgba(255,215,0,.06)}
+  .chip.cyan{color:var(--cyan);border-color:rgba(0,229,255,.4);background:rgba(0,229,255,.06)}
+  .chip.pink{color:var(--pink);border-color:rgba(255,45,154,.4);background:rgba(255,45,154,.06)}
+  .chip.life{color:var(--life);border-color:rgba(77,255,155,.4);background:rgba(77,255,155,.06)}
+  .chip.ok{color:var(--ok);border-color:rgba(77,255,155,.4);background:rgba(77,255,155,.08)}
+  .chip.bad{color:var(--bad);border-color:rgba(255,89,116,.4);background:rgba(255,89,116,.08)}
+  .grid{display:grid;grid-template-columns:1fr;gap:10px}
+  @media(min-width:820px){.grid{grid-template-columns:1.05fr .95fr}}
+  .panel{border:1px solid var(--line);border-radius:14px;padding:12px;background:var(--panel)}
+  .panel h2{font-size:9px;letter-spacing:.22em;text-transform:uppercase;
+    color:var(--dim);margin-bottom:8px;font-weight:700;
+    display:flex;justify-content:space-between;align-items:center;gap:6px}
+  .cv-wrap{position:relative;aspect-ratio:1/1;max-height:600px;
+    background:radial-gradient(120% 120% at 50% 0%,#0a0f19,#05070d);
+    border-radius:12px;overflow:hidden;border:1px solid var(--line)}
+  canvas{display:block;width:100%;height:100%;cursor:crosshair;touch-action:manipulation}
+  textarea{width:100%;min-height:62px;resize:vertical;background:var(--panel2);
+    color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;
+    font-family:var(--mono);font-size:11px;line-height:1.55;outline:none}
+  textarea:focus{border-color:rgba(0,229,255,.5);box-shadow:0 0 0 3px rgba(0,229,255,.1)}
+  .linker-grid{display:grid;grid-template-columns:1fr;gap:8px}
+  .linker{border:1px solid var(--line);border-radius:10px;padding:9px 10px;
+    background:var(--panel2);transition:all .2s}
+  .linker.was{border-color:rgba(0,229,255,.25)}
+  .linker.wie{border-color:rgba(255,215,0,.25)}
+  .linker.warum{border-color:rgba(255,45,154,.25)}
+  .linker.active.was{border-color:rgba(0,229,255,.7);box-shadow:0 0 20px rgba(0,229,255,.15)}
+  .linker.active.wie{border-color:rgba(255,215,0,.7);box-shadow:0 0 20px rgba(255,215,0,.15)}
+  .linker.active.warum{border-color:rgba(255,45,154,.7);box-shadow:0 0 20px rgba(255,45,154,.15)}
+  .linker .lbl{font-size:9px;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--dim);margin-bottom:5px;font-weight:700}
+  .linker.was .lbl{color:var(--cyan)}
+  .linker.wie .lbl{color:var(--gold)}
+  .linker.warum .lbl{color:var(--pink)}
+  .status-row{display:flex;justify-content:space-between;padding:3px 0;
+    border-bottom:1px dashed rgba(36,48,68,.5);font-size:11px}
+  .status-row:last-child{border-bottom:0}
+  .status-row .k{color:var(--dim)}
+  .status-row .v{color:var(--fg);font-weight:700}
+  .v.ok{color:var(--ok)}.v.bad{color:var(--bad)}.v.gold{color:var(--gold)}
+  .v.cyan{color:var(--cyan)}.v.pink{color:var(--pink)}.v.life{color:var(--life)}
+  .btns{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+  button{background:transparent;color:var(--dim);border:1px solid var(--line);
+    padding:6px 11px;font-family:var(--mono);font-size:11px;letter-spacing:.05em;
+    cursor:pointer;border-radius:8px;transition:.15s;font-weight:600}
+  button:hover{background:rgba(255,255,255,.05);color:var(--fg);transform:translateY(-1px)}
+  button.gold{color:var(--gold);border-color:rgba(255,215,0,.5)}
+  button.gold:hover{background:rgba(255,215,0,.12)}
+  button.cyan{color:var(--cyan);border-color:rgba(0,229,255,.5)}
+  button.cyan:hover{background:rgba(0,229,255,.12)}
+  .legend{display:flex;flex-wrap:wrap;gap:10px;font-size:10px;color:var(--dim);margin-top:8px}
+  .legend span{display:inline-flex;align-items:center;gap:5px}
+  .dot{width:8px;height:8px;border-radius:999px;display:inline-block}
+  footer{text-align:center;font-size:9px;letter-spacing:.14em;color:var(--dim);padding:14px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="hdr">
+    <h1>LINK.ATME</h1>
+    <div class="sub">net.ter + link.ker · HOME 40 · f²=f · 9×40°=360° · Leben / Mann / Unleben</div>
+    <div class="sub2">27 · 27 · 27 = 81 Zellen · Pyramide 1-2-3-3 = 9 · Einer macht LINK · HOME hält</div>
+    <div class="chips" id="chips"></div>
+  </header>
+
+  <div class="grid">
+    <div class="panel">
+      <h2>
+        <span>ATME · 3 RINGE · HOME 40</span>
+        <span id="atme-ind" style="font-size:9px;color:var(--dim)">breathe 0.00</span>
+      </h2>
+      <div class="cv-wrap">
+        <canvas id="cv" width="720" height="720"></canvas>
+      </div>
+      <div class="legend">
+        <span><span class="dot" style="background:var(--life)"></span>LEBEN 0-26</span>
+        <span><span class="dot" style="background:var(--gold)"></span>MANN 27-53 (HOME 40)</span>
+        <span><span class="dot" style="background:var(--unlife)"></span>UNLEBEN 54-80</span>
+        <span><span class="dot" style="background:var(--cyan)"></span>was</span>
+        <span><span class="dot" style="background:var(--gold)"></span>wie</span>
+        <span><span class="dot" style="background:var(--pink)"></span>warum</span>
+      </div>
+    </div>
+
+    <div class="panel" style="display:flex;flex-direction:column;gap:10px">
+      <h2>LINK.KER · was / wie / warum</h2>
+      <div class="linker-grid">
+        <div class="linker was" id="lnk-was">
+          <div class="lbl">was → wurzel-hub · cyan</div>
+          <textarea id="ta-was" placeholder="das ding&#10;9 dreiecke&#10;link.ker verbindet"></textarea>
+        </div>
+        <div class="linker wie" id="lnk-wie">
+          <div class="lbl">wie → bio.tel · gold</div>
+          <textarea id="ta-wie" placeholder="40 = 4·9+4&#10;9×40°=360°&#10;f²=f geprüft"></textarea>
+        </div>
+        <div class="linker warum" id="lnk-warum">
+          <div class="lbl">warum → pyramiden · pink</div>
+          <textarea id="ta-warum" placeholder="weil f(f(x))=f(x)&#10;damit home hält&#10;regel für netz"></textarea>
+        </div>
+      </div>
+
+      <div>
+        <h2 style="margin-top:4px">STATUS</h2>
+        <div id="status"></div>
+      </div>
+
+      <div class="btns">
+        <button class="gold" onclick="atmeBang()">◦ ATME STÄRKER</button>
+        <button class="cyan" onclick="atmeStop()">■ STILL</button>
+        <button onclick="resetAll()">RESET</button>
+        <button onclick="exportJSON()">↓ JSON</button>
+      </div>
+    </div>
+  </div>
+
+  <footer>LINK.ATME v1 · HOME 40 · 3 Ringe atmen · 9 Dreiecke · f²=f · Leben/Mann/Unleben · single file</footer>
+</div>
+
+<script>
+const HOME = 40;
+const N_CELLS = 81;
+
+// Zones: 27 cells each, mapped to 3 rings
+const ZONES = [
+  { name:'leben',   start:0,  end:26, radius:110, color:'#4dff9b',
+    alpha:0.85, breathRate:0.45, breathAmp:0.18, heart:false },
+  { name:'mann',    start:27, end:53, radius:190, color:'#ffd700',
+    alpha:0.95, breathRate:1.40, breathAmp:0.28, heart:true },
+  { name:'unleben', start:54, end:80, radius:270, color:'#3a4a5f',
+    alpha:0.35, breathRate:0.15, breathAmp:0.05, heart:false },
+];
+const ZONE_R = { leben:110, mann:190, unleben:270 };
+
+// Categories → angle + color for link.ker lines
+const CAT = {
+  was:   { color:'#00e5ff', angle: -Math.PI/2,        ring:110, name:'wurzel-hub' },
+  wie:   { color:'#ffd700', angle:  Math.PI/6,        ring:190, name:'bio.tel' },
+  warum: { color:'#ff2d9a', angle:  5*Math.PI/6,      ring:270, name:'pyramiden' },
+};
+
+// Pyramid formation 1-2-3-3 = 9 points
+const PYRAMID = [
+  {x:   0, y:-70},
+  {x: -35, y:-35}, {x:  35, y:-35},
+  {x: -60, y:  0}, {x:   0, y:  0}, {x:  60, y:  0},
+  {x: -85, y: 35}, {x:   0, y: 35}, {x:  85, y: 35},
+];
+
+// State
+const state = {
+  was: [], wie: [], warum: [],
+  t0: performance.now(),
+  atmeBoost: 0,
+  atmeActive: true,
+  cv: null, ctx: null,
+};
+
+// ===== Text inputs =====
+['was','wie','warum'].forEach(k=>{
+  const ta = document.getElementById('ta-'+k);
+  ta.addEventListener('input', ()=>{
+    state[k] = ta.value.split('\n').map(s=>s.trim()).filter(Boolean);
+    document.getElementById('lnk-'+k).classList.toggle('active', state[k].length>0);
+    updateStatus();
+  });
+});
+
+// ===== Checks =====
+function idemCheck(){
+  const cat = state.was.length+'|'+state.wie.length+'|'+state.warum.length;
+  const n = s => s.toLowerCase().split('\n').map(x=>x.replace(/\s+/g,' ').trim()).filter(Boolean).sort().join('\n');
+  return n(cat) === n(n(cat));
+}
+function wurzelCheck(){
+  return state.was.length>0 && state.wie.length>0 && state.warum.length>0;
+}
+function linkerCount(){
+  return [state.was, state.wie, state.warum].filter(a=>a.length>0).length;
+}
+function totalLines(){
+  return state.was.length + state.wie.length + state.warum.length;
+}
+function pyramidPoints(){
+  // Interleave categories, max 9
+  const pts = [];
+  const max = Math.max(state.was.length, state.wie.length, state.warum.length);
+  for(let i=0; i<max && pts.length<9; i++){
+    if(i<state.was.length && pts.length<9)   pts.push('was');
+    if(i<state.wie.length && pts.length<9)   pts.push('wie');
+    if(i<state.warum.length && pts.length<9) pts.push('warum');
+  }
+  return pts;
+}
+
+// ===== Status =====
+function updateStatus(){
+  const idem = idemCheck();
+  const wurzel = wurzelCheck();
+  const lk = linkerCount();
+  const tl = totalLines();
+  const pts = pyramidPoints();
+
+  document.getElementById('chips').innerHTML = `
+    <span class="chip gold">HOME 40</span>
+    <span class="chip cyan">9×40°=360°</span>
+    <span class="chip">${N_CELLS} Zellen · 27/27/27</span>
+    <span class="chip ${idem?'ok':'bad'}">f²=f ${idem?'✓':'✗'}</span>
+    <span class="chip ${wurzel?'ok':'bad'}">${wurzel?'3→1 WURZEL ✓':'fehlt: '+['was','wie','warum'].filter(k=>state[k].length===0).join(', ')}</span>
+    <span class="chip ${lk===3?'ok':lk>0?'cyan':''}">link.ker ${lk}/3</span>
+    <span class="chip ${pts.length>=9?'gold':''}">pyramide ${pts.length}/9</span>
+    <span class="chip">${tl} Zeilen</span>
+  `;
+
+  document.getElementById('status').innerHTML = `
+    <div class="status-row"><span class="k">was · wurzel-hub</span><span class="v cyan">${state.was.length}</span></div>
+    <div class="status-row"><span class="k">wie · bio.tel</span><span class="v gold">${state.wie.length}</span></div>
+    <div class="status-row"><span class="k">warum · pyramiden</span><span class="v pink">${state.warum.length}</span></div>
+    <div class="status-row"><span class="k">link.ker</span><span class="v ${lk===3?'ok':''}">${lk}/3</span></div>
+    <div class="status-row"><span class="k">f²=f (idempotent)</span><span class="v ${idem?'ok':'bad'}">${idem?'✓':'✗'}</span></div>
+    <div class="status-row"><span class="k">wurzel (3→1)</span><span class="v ${wurzel?'ok':'bad'}">${wurzel?'✓':'✗'}</span></div>
+    <div class="status-row"><span class="k">HOME 40</span><span class="v gold">✓ fixpunkt</span></div>
+    <div class="status-row"><span class="k">LEBEN · MANN · UNLEBEN</span><span class="v">27 / 27 / 27</span></div>
+    <div class="status-row"><span class="k">atme</span><span class="v ${state.atmeActive?'life':''}">${state.atmeActive?'✓':'■ still'}</span></div>
+  `;
+}
+
+// ===== Actions =====
+function atmeBang(){
+  state.atmeBoost = 1.0;
+  state.atmeActive = true;
+  updateStatus();
+}
+function atmeStop(){
+  state.atmeActive = !state.atmeActive;
+  updateStatus();
+}
+function resetAll(){
+  state.was = []; state.wie = []; state.warum = [];
+  state.atmeBoost = 0;
+  state.atmeActive = true;
+  ['was','wie','warum'].forEach(k=>{
+    document.getElementById('ta-'+k).value = '';
+    document.getElementById('lnk-'+k).classList.remove('active');
+  });
+  updateStatus();
+}
+function exportJSON(){
+  const payload = {
+    name: 'link.atme', v: 'v1',
+    home: HOME, n: N_CELLS,
+    fixpunkt: '40 = 4·9+4 = 360/9',
+    angles: '9×40°=360°',
+    zones: {
+      leben:   {range:[0,26],   count:27, breathRate:0.45, color:'#4dff9b'},
+      mann:    {range:[27,53],  count:27, home:40, breathRate:1.40, color:'#ffd700'},
+      unleben: {range:[54,80],  count:27, breathRate:0.15, color:'#3a4a5f'},
+    },
+    pyramid: '1-2-3-3 = 9 punkte',
+    was: state.was, wie: state.wie, warum: state.warum,
+    linkKer: linkerCount(),
+    idem: idemCheck(),
+    wurzel: wurzelCheck(),
+    pyramidFilled: pyramidPoints(),
+  };
+  const blob = new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'link.atme.json';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1500);
+}
+
+// ===== Cell positions =====
+function cellPos(idx){
+  const z = ZONES.find(zn => idx>=zn.start && idx<=zn.end);
+  const total = z.end - z.start + 1;
+  const local = idx - z.start;
+  const angle = local * (Math.PI*2/total) - Math.PI/2;
+  return {
+    x: Math.cos(angle) * z.radius,
+    y: Math.sin(angle) * z.radius,
+    zone: z, local, angle,
+  };
+}
+
+// ===== Canvas render =====
+function breathSlow(t, rate){
+  return 0.5 + 0.5 * Math.sin(t * rate);
+}
+function breathHeart(t, rate){
+  const s = 0.5 + 0.5 * Math.sin(t * rate);
+  return Math.pow(s, 3);
+}
+
+function initCanvas(){
+  state.cv = document.getElementById('cv');
+  state.ctx = state.cv.getContext('2d');
+}
+
+function render(now){
+  const t = (now - state.t0) / 1000;
+  const c = state.ctx;
+  const W = state.cv.width, H = state.cv.height;
+  const cx = W/2, cy = H/2;
+
+  // Boost decay
+  if(state.atmeBoost > 0) state.atmeBoost = Math.max(0, state.atmeBoost - 0.004);
+  const boost = state.atmeBoost;
+  const active = state.atmeActive ? 1 : 0.35;
+
+  // Background
+  c.fillStyle = '#05070d';
+  c.fillRect(0,0,W,H);
+
+  // Dotted grid
+  c.fillStyle = 'rgba(77,255,155,0.025)';
+  for(let gx=20; gx<W; gx+=32)
+    for(let gy=20; gy<H; gy+=32)
+      c.fillRect(gx, gy, 1, 1);
+
+  c.save();
+  c.translate(cx, cy);
+
+  // ===== Ring outlines =====
+  ZONES.forEach(z=>{
+    c.beginPath();
+    c.arc(0,0,z.radius,0,Math.PI*2);
+    c.strokeStyle = z.color;
+    c.globalAlpha = 0.10 * active;
+    c.lineWidth = 1;
+    c.setLineDash([3,10]);
+    c.stroke();
+    c.setLineDash([]);
+  });
+  c.globalAlpha = 1;
+
+  // ===== Ring topology lines (adjacent cells connect) =====
+  // Only on active rings (where category has content)
+  const ringActive = {
+    leben:   state.was.length > 0,
+    mann:    state.wie.length > 0 || state.was.length > 0 || state.warum.length > 0,
+    unleben: state.warum.length > 0,
+  };
+
+  ZONES.forEach(z=>{
+    if(!ringActive[z.name]) return;
+    const total = z.end - z.start + 1;
+    const alpha = (z.name==='unleben' ? 0.15 : 0.35) * active;
+    c.strokeStyle = z.color;
+    c.globalAlpha = alpha;
+    c.lineWidth = 0.7;
+    for(let i=0; i<total; i++){
+      const a = cellPos(z.start + i);
+      const b = cellPos(z.start + ((i+1)%total));
+      c.beginPath();
+      c.moveTo(a.x, a.y);
+      c.lineTo(b.x, b.y);
+      c.stroke();
+    }
+  });
+  c.globalAlpha = 1;
+
+  // ===== link.ker lines: HOME → each active category ring =====
+  const lk = linkerCount();
+  const linkActive = {
+    was:   state.was.length > 0,
+    wie:   state.wie.length > 0,
+    warum: state.warum.length > 0,
+  };
+  Object.entries(CAT).forEach(([cat, cfg])=>{
+    if(!linkActive[cat]) return;
+    const ex = Math.cos(cfg.angle) * cfg.ring;
+    const ey = Math.sin(cfg.angle) * cfg.ring;
+    // glow halo
+    c.beginPath();
+    c.moveTo(0,0);
+    c.lineTo(ex, ey);
+    c.strokeStyle = cfg.color;
+    c.globalAlpha = 0.18 * active;
+    c.lineWidth = 8;
+    c.lineCap = 'round';
+    c.stroke();
+    // core line
+    c.beginPath();
+    c.moveTo(0,0);
+    c.lineTo(ex, ey);
+    c.strokeStyle = cfg.color;
+    c.globalAlpha = (lk===3 ? 0.95 : 0.75) * active;
+    c.lineWidth = lk===3 ? 2.5 : 1.8;
+    c.shadowColor = cfg.color;
+    c.shadowBlur = lk===3 ? 12 : 6;
+    c.stroke();
+    c.shadowBlur = 0;
+    c.globalAlpha = 1;
+  });
+
+  // ===== 81 cells =====
+  for(let i=0; i<N_CELLS; i++){
+    if(i === HOME) continue; // HOME drawn separately
+    const p = cellPos(i);
+    const z = p.zone;
+    let b = z.heart ? breathHeart(t, z.breathRate) : breathSlow(t, z.breathRate);
+    b = b * active + (1 - active) * 0.3;
+    const cellR = 3.5 + b * z.breathAmp * 8 + boost * (z.name==='mann' ? 3 : 1.5);
+    const alpha = z.alpha * (0.65 + b * 0.35) * (0.5 + active*0.5);
+    c.beginPath();
+    c.arc(p.x, p.y, cellR, 0, Math.PI*2);
+    c.fillStyle = z.color;
+    c.globalAlpha = alpha;
+    c.fill();
+    c.globalAlpha = 1;
+  }
+
+  // ===== HOME 40 (heartbeat) =====
+  const bH = breathHeart(t, ZONES[1].breathRate);
+  const effB = bH * active + (1-active)*0.2;
+  const homeGlow = 22 + effB * 10 + boost * 20;
+  // outer glow
+  c.beginPath();
+  c.arc(0, 0, homeGlow, 0, Math.PI*2);
+  c.fillStyle = '#ffd700';
+  c.globalAlpha = 0.12 + effB * 0.15 + boost * 0.1;
+  c.fill();
+  c.globalAlpha = 1;
+  // home circle
+  const homeR = 14 + effB * 3 + boost * 4;
+  c.beginPath();
+  c.arc(0, 0, homeR, 0, Math.PI*2);
+  c.fillStyle = '#ffd700';
+  c.strokeStyle = '#ffffff';
+  c.lineWidth = 1.5;
+  c.shadowColor = '#ffd700';
+  c.shadowBlur = 8 + effB * 12;
+  c.fill();
+  c.stroke();
+  c.shadowBlur = 0;
+  // home text
+  c.fillStyle = '#05070d';
+  c.font = 'bold 11px "JetBrains Mono", monospace';
+  c.textAlign = 'center';
+  c.textBaseline = 'middle';
+  c.fillText('40', 0, 1);
+  // HOME label
+  c.fillStyle = '#ffd700';
+  c.font = '9px "JetBrains Mono", monospace';
+  c.fillText('HOME', 0, -homeR - 8);
+
+  // ===== Pyramid formation (1-2-3-3) =====
+  const pts = pyramidPoints();
+  const filled = pts.length;
+  // ghost outline
+  PYRAMID.forEach((p, i)=>{
+    if(i < filled) return;
+    c.beginPath();
+    c.arc(p.x, p.y, 2.5, 0, Math.PI*2);
+    c.fillStyle = '#243044';
+    c.globalAlpha = 0.5;
+    c.fill();
+    c.globalAlpha = 1;
+  });
+  // filled points
+  const catColor = { was:'#00e5ff', wie:'#ffd700', warum:'#ff2d9a' };
+  PYRAMID.forEach((p, i)=>{
+    if(i >= filled) return;
+    const cat = pts[i];
+    const col = catColor[cat];
+    const b = breathSlow(t, 1.0) * active + (1-active)*0.3;
+    const pr = 7 + b * 3 + boost * 3;
+    // outer glow
+    c.beginPath();
+    c.arc(p.x, p.y, pr + 5, 0, Math.PI*2);
+    c.fillStyle = col;
+    c.globalAlpha = 0.12 * active;
+    c.fill();
+    c.globalAlpha = 1;
+    // core
+    c.beginPath();
+    c.arc(p.x, p.y, pr, 0, Math.PI*2);
+    c.fillStyle = col;
+    c.globalAlpha = 0.95 * active;
+    c.shadowColor = col;
+    c.shadowBlur = 10 + boost * 15;
+    c.fill();
+    c.shadowBlur = 0;
+    c.globalAlpha = 1;
+  });
+  // pyramid edges between filled
+  if(filled > 1){
+    c.strokeStyle = 'rgba(255,215,0,0.28)';
+    c.lineWidth = 1;
+    c.globalAlpha = active * 0.8;
+    for(let i=0; i<filled; i++){
+      for(let j=i+1; j<filled; j++){
+        const a = PYRAMID[i], b = PYRAMID[j];
+        if(Math.hypot(a.x-b.x, a.y-b.y) < 55){
+          c.beginPath();
+          c.moveTo(a.x, a.y);
+          c.lineTo(b.x, b.y);
+          c.stroke();
+        }
+      }
+    }
+    c.globalAlpha = 1;
+  }
+
+  // ===== outer breath ring indicator =====
+  const bGlobal = breathSlow(t, 0.6);
+  const outerR = 320 + bGlobal * 8 + boost * 25;
+  c.beginPath();
+  c.arc(0, 0, outerR, 0, Math.PI*2);
+  c.strokeStyle = '#00e5ff';
+  c.globalAlpha = (0.04 + bGlobal * 0.06) * active;
+  c.lineWidth = 1;
+  c.stroke();
+  c.globalAlpha = 1;
+
+  c.restore();
+
+  // Update atme indicator
+  document.getElementById('atme-ind').textContent =
+    'breathe ' + breathSlow(t, 0.6).toFixed(2) +
+    (boost > 0.1 ? ' · +' + boost.toFixed(2) : '');
+
+  requestAnimationFrame(render);
+}
+
+// ===== Boot =====
+initCanvas();
+updateStatus();
+requestAnimationFrame(render);
+</script>
+</body>
+</html>
